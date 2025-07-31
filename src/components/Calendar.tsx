@@ -12,9 +12,10 @@ interface Reservation {
 interface CalendarProps {
   reservations: Reservation[];
   onReservationClick: (reservation: Reservation) => void;
+  onDateClick: (date: string) => void;
 }
 
-const Calendar = ({ reservations, onReservationClick }: CalendarProps) => {
+const Calendar = ({ reservations, onReservationClick, onDateClick }: CalendarProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysOfWeek = ["D", "S", "T", "Q", "Q", "S", "S"];
@@ -91,7 +92,16 @@ const Calendar = ({ reservations, onReservationClick }: CalendarProps) => {
           return (
             <div
               key={index}
-              onClick={() => reservation && onReservationClick(reservation)}
+              onClick={() => {
+                if (!isInCurrentMonth) return;
+                if (reservation) {
+                  onReservationClick(reservation);
+                } else {
+                  // Clica em data disponível para criar reserva
+                  const dateStr = day.toISOString().split('T')[0];
+                  onDateClick(dateStr);
+                }
+              }}
               className={`calendar-day ${
                 !isInCurrentMonth 
                   ? "empty opacity-30" 

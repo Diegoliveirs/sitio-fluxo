@@ -1,5 +1,7 @@
 import { useState } from "react";
+import * as React from "react";
 import Navigation from "@/components/Navigation";
+import EditReservationModal from "@/components/EditReservationModal";
 import { Calendar, Phone, DollarSign, Filter } from "lucide-react";
 
 interface Reservation {
@@ -13,50 +15,55 @@ interface Reservation {
 
 const Reservas = () => {
   const [filterPeriod, setFilterPeriod] = useState("all");
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  // Dados mockados
-  const mockReservations: Reservation[] = [
-    {
-      id: "1",
-      client: "Jonathan Lee",
-      date: "2024-04-11",
-      value: 200,
-      phone: "(11) 99999-9999",
-      status: "confirmed"
-    },
-    {
-      id: "2",
-      client: "Maria Silva",
-      date: "2024-04-15",
-      value: 350,
-      phone: "(11) 88888-8888",
-      status: "confirmed"
-    },
-    {
-      id: "3",
-      client: "João Santos",
-      date: "2024-04-20",
-      value: 150,
-      phone: "(11) 77777-7777",
-      status: "pending"
-    },
-    {
-      id: "4",
-      client: "Ana Costa",
-      date: "2024-04-25",
-      value: 280,
-      phone: "(11) 66666-6666",
-      status: "confirmed"
-    },
-    {
-      id: "5",
-      client: "Carlos Oliveira",
-      date: "2024-05-02",
-      value: 180,
-      phone: "(11) 55555-5555",
-      status: "pending"
-    }
-  ];
+  // Inicializar dados mockados
+  React.useEffect(() => {
+    const mockReservations: Reservation[] = [
+      {
+        id: "1",
+        client: "Jonathan Lee",
+        date: "2024-12-11",
+        value: 200,
+        phone: "(11) 99999-9999",
+        status: "confirmed"
+      },
+      {
+        id: "2",
+        client: "Maria Silva",
+        date: "2024-12-15",
+        value: 350,
+        phone: "(11) 88888-8888",
+        status: "confirmed"
+      },
+      {
+        id: "3",
+        client: "João Santos",
+        date: "2024-12-20",
+        value: 150,
+        phone: "(11) 77777-7777",
+        status: "pending"
+      },
+      {
+        id: "4",
+        client: "Ana Costa",
+        date: "2024-12-25",
+        value: 280,
+        phone: "(11) 66666-6666",
+        status: "confirmed"
+      },
+      {
+        id: "5",
+        client: "Carlos Oliveira",
+        date: "2025-01-02",
+        value: 180,
+        phone: "(11) 55555-5555",
+        status: "pending"
+      }
+    ];
+    setReservations(mockReservations);
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -99,6 +106,51 @@ const Reservas = () => {
       currency: 'BRL'
     }).format(value);
   };
+
+  // Filtrar reservas com base no período selecionado
+  const getFilteredReservations = () => {
+    const now = new Date();
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - now.getDay());
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+    
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return reservations.filter(reservation => {
+      const reservationDate = new Date(reservation.date);
+      
+      switch (filterPeriod) {
+        case "week":
+          return reservationDate >= currentWeekStart && reservationDate <= currentWeekEnd;
+        case "month":
+          return reservationDate >= currentMonthStart && reservationDate <= currentMonthEnd;
+        default:
+          return true;
+      }
+    });
+  };
+
+  const handleReservationClick = (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+  };
+
+  const handleSaveReservation = (updatedReservation: Reservation) => {
+    setReservations(prev => 
+      prev.map(r => r.id === updatedReservation.id ? updatedReservation : r)
+    );
+  };
+
+  const handleDeleteReservation = (reservationId: string) => {
+    setReservations(prev => prev.filter(r => r.id !== reservationId));
+  };
+
+  const closeModal = () => {
+    setSelectedReservation(null);
+  };
+
+  const filteredReservations = getFilteredReservations();
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -146,8 +198,12 @@ const Reservas = () => {
 
       {/* Reservations List */}
       <div className="mx-4 mt-4 space-y-3">
-        {mockReservations.map((reservation) => (
-          <div key={reservation.id} className="glass-card p-4">
+        {filteredReservations.map((reservation) => (
+          <div 
+            key={reservation.id} 
+            className="glass-card p-4 cursor-pointer hover:shadow-lg transition-all"
+            onClick={() => handleReservationClick(reservation)}
+          >
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="font-semibold text-lg">{reservation.client}</h3>
@@ -175,9 +231,22 @@ const Reservas = () => {
             </div>
           </div>
         ))}
+        
+        {filteredReservations.length === 0 && (
+          <div className="glass-card p-8 text-center">
+            <p className="text-muted-foreground">Nenhuma reserva encontrada para o período selecionado.</p>
+          </div>
+        )}
       </div>
 
       <Navigation />
+      
+      <EditReservationModal
+        reservation={selectedReservation}
+        onClose={closeModal}
+        onSave={handleSaveReservation}
+        onDelete={handleDeleteReservation}
+      />
     </div>
   );
 };
